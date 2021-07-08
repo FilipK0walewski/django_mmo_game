@@ -1,0 +1,256 @@
+{% extends "game/base.html" %}
+{% load static %}
+{% block content %}
+    <div class="container-md mx-auto game-div">
+        <script>
+
+            const roomName = 'game'
+
+            const chatSocket = new WebSocket(
+                        'ws://'
+                        + window.location.host
+                        + '/ws/chat/'
+                        + roomName
+                        + '/'
+            )
+
+            class TextButton extends Phaser.GameObjects.Text{
+                constructor(scene, x, y, text, style, on_click){
+                    super(scene, x, y, text, style)
+
+                    this.setInteractive({useHandCursor: true})
+                    .on('pointerover', () => this.enterButtonHoverState())
+                    .on('pointerout', () => this.enterButtonRestState())
+                    .on('pointerdown', () => this.enterButtonActiveState())
+                    .on('pointerup', () => {
+                        this.enterButtonHoverState()
+                        on_click()
+                    })
+                    .setOrigin(.5)
+                }
+
+                enterButtonHoverState(){
+                    this.setStyle({fill: '#ff0'})
+                }
+
+                enterButtonRestState() {
+                    this.setStyle({ fill: '#fff '})
+                }
+
+                enterButtonActiveState() {
+                    this.setStyle({ fill: '#0ff' })
+                }
+            }
+            
+            class RectButton extends Phaser.GameObjects.Rectangle{
+                constructor(scene, x, y, width, height, color, on_click){
+                    super(scene, x, y, width, height)
+
+                    this.setInteractive({useHandCursor: true})
+                    .on('pointerover', () => this.enterButtonHoverState())
+                    .on('pointerdown', () => this.enterButtonActiveState())
+                    .on('pointerup', () => {
+                        this.enterButtonHoverState()
+                        on_click()
+                    })
+
+                    this.setStrokeStyle(4, 0xefc53f)
+                }
+
+                enterButtonHoverState(){
+                    
+                }
+
+                enterButtonRestState() {
+                    
+                }
+
+                enterButtonActiveState() {
+                    
+                }
+            }
+
+            class Character extends Phaser.GameObjects.Sprite{
+                constructor(scene, x, y){
+                    super(scene, x, y, 'player')
+
+
+                }
+            }
+
+            class Start extends Phaser.Scene{
+                constructor(){
+                    super({key: 'start'})
+                }
+
+                create(){
+                    this.text = this.add.text(480, 350, 'CLICK TO START', {fontSize: '59px', fill: '#111', strokeThickness: 16, align: 'center'}).setOrigin(.5)
+                    this.input.on('pointerdown', ()=>{
+                        this.scene.start('willage')
+                    })
+                }
+            }
+
+            class Weaponsmith extends Phaser.Scene{
+                constructor(){
+                    super({key: 'weaponsmith'})
+                }
+
+                create(){
+                    this.msg = this.scene.key + ' COMING SOON'
+                    this.add.text(480, 200, this.msg, {fontSize: '49px', fill: '#111', strokeThickness: 14, align: 'center'}).setOrigin(.5)
+                    this.text = this.add.text(480, 350, 'CLICK TO BACK TO WILLAGE', {fontSize: '49px', fill: '#111', strokeThickness: 16, align: 'center'}).setOrigin(.5)
+                    this.input.on('pointerdown', ()=>{
+                        this.scene.start('willage')
+                    })
+                }
+            }
+
+
+            class Armory extends Phaser.Scene{
+                constructor(){
+                    super({key: 'armory'})
+                }
+
+                create(){
+                    this.msg = this.scene.key + ' COMING SOON'
+                    this.add.text(480, 200, this.msg, {fontSize: '49px', fill: '#111', strokeThickness: 14, align: 'center'}).setOrigin(.5)
+                    this.text = this.add.text(480, 350, 'CLICK TO BACK TO WILLAGE', {fontSize: '49px', fill: '#111', strokeThickness: 16, align: 'center'}).setOrigin(.5)
+                    this.input.on('pointerdown', ()=>{
+                        this.scene.start('willage')
+                    })
+                }
+            }
+
+            class Arena extends Phaser.Scene{
+                constructor(){
+                    super({key: 'arena'})
+                }
+
+                preload(){
+                    this.load.tilemapTiledJSON('arena_map', "{% static 'game/assets/arena.json' %}")
+                }
+
+                create(){
+                    this.move_left = false
+                    const width = this.sys.game.canvas.width
+                    const height = this.sys.game.canvas.height
+                    const padding = 16
+
+                    const map = this.make.tilemap({key: 'arena_map', tileWidth: 48, tileHeight: 48})
+                    const tileset = map.addTilesetImage('tiles0', 'tiles')
+                    map.createLayer('ground', tileset, 0, 0)
+                    map.createLayer('on_ground', tileset, 0, 0)
+
+                    this.player = this.add.sprite(width * .4, height * .5, 'player')
+                    this.player.play('idle')
+
+                    this.move_left_btn = new RectButton(this, 0, 0, 100, 100, '#ff0', () => this.moveLeft())
+                    this.add.existing(this.move_left_btn)
+                }
+
+                update(){
+                    if (this.move_left === true){
+                        this.move_left = false
+                    }
+                }
+
+                moveLeft(){
+                    console.log('moving left')
+                    this.move_left = true
+                }
+            }
+
+            class Willage extends Phaser.Scene{
+
+                constructor(){
+                    super({key: 'willage'})
+                }
+
+                preload(){
+                    //map
+                    this.load.tilemapTiledJSON('willage_map', "{% static 'game/assets/map0.json' %}")
+                    this.load.image('tiles', "{% static 'game/assets/tiles0.png' %}")
+                    this.load.image('buildings', "{% static 'game/assets/tiles1.png' %}")
+
+                    //player
+                    this.load.atlas('player', "{% static 'game/assets/player_female.png' %}", "{% static 'game/assets/player_female.json' %}")
+                }
+
+                create(){
+                    
+                    console.log('{{ user.username }}')
+                    console.log('{{ user.characters }}')
+
+                    //map
+                    const width = this.sys.game.canvas.width
+                    const height = this.sys.game.canvas.height
+                    
+                    const map = this.make.tilemap({key: 'willage_map', tileWidth: 48, tileHeight: 48})
+                    const tileset = map.addTilesetImage('tiles0', 'tiles')
+                    const buildings = map.addTilesetImage('tiles1', 'buildings')
+                    map.createLayer('ground', tileset, 0, 0)
+                    map.createLayer('on_ground', tileset, 0, 0)
+                    map.createLayer('buildings', buildings, 0, 0)
+
+                    //player
+
+                    this.player = this.add.sprite(480, 360, 'player')
+                    let frame_names = this.textures.get('player').getFrameNames()
+                    let idle_frames = []
+
+                    for (let i = 1; i < 6; i++){
+                        idle_frames.push({key: 'player', frame: 'Warrior_Idle_' + i + '.png'})
+                    }
+
+                    this.anims.create({
+                        key: 'idle',
+                        frames: idle_frames,
+                        frameRate: 8,
+                        repeat: -1
+                    })
+                    this.player.play('idle')
+
+                    this.add.text(this.player.x, this.player.y - this.player.height * .5, '{{ user.username }}', {fill: '#00f'}).setOrigin(0.5)
+                                
+                    //buttons
+
+                    this.btn_style = {fontSize: '24px', fill: '#fff', strokeThickness: 8, stroke: '#555'}
+                    
+                    this.ws_btn = new TextButton(this, 144, 296, 'weaponsmith', this.btn_style, () => this.change_scene('weaponsmith'))
+                    this.armory_btn = new TextButton(this, 816, 296, 'armory', this.btn_style, () => this.change_scene('armory'))
+                    this.arena_btn = new TextButton(this, 480, 48, 'arena', this.btn_style, () => this.change_scene('arena'))
+                    this.add.existing(this.ws_btn)
+                    this.add.existing(this.armory_btn)
+                    this.add.existing(this.arena_btn)
+                }
+                
+                update(){
+                }
+
+                change_scene(new_scene){
+                    this.scene.start(new_scene)
+                }
+            }
+            
+            const config = {
+                type: Phaser.AUTO,
+                width: 960,
+                height: 720,
+                autoCenter: true,
+                physics: {
+                    default: 'arcade',
+                    arcade: {
+                        gravity: { y: 0 },
+                        debug: false
+                    }
+                },
+                scene: [Start, Willage, Weaponsmith, Armory, Arena]
+            }
+
+            const game = new Phaser.Game(config)
+
+        </script>
+    </div>
+
+{% endblock content %}

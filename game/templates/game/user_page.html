@@ -1,0 +1,53 @@
+{% extends "game/base.html" %}
+{% block content %}
+
+    <div class="d-flex flex-column bd-highlight mb-3 bg-dark rounded">
+        <div class="d-flex flex-row bd-highlight mb-2 p-2">
+            <img src="{{ user.profile.image.url }}" class="align-self-center rounded-circle article-img">
+            {% if user.is_superuser %}
+                <h2 class="align-self-center text-danger text-uppercase">{{ user.username }}</h2>
+            {% else %}
+                <h2 class="align-self-center">{{ user.username }}</h2>
+            {% endif %}
+
+            {% if request.user.id == user.id %}
+                <button type="button" class="ms-auto align-self-center btn btn-primary btn-sm">change profile</button>
+            {% endif %}
+        </div>
+        <div class="d-flex flex-row bd-highlight mb-2 p-2">
+            <p class="text-start lh-lg px-2">email: {{ user.email }}</p>
+        </div>
+    </div>
+
+    <div class="container-md">
+        <div class="row">
+            <div class="col text-start bg-dark rounded me-1">
+                <h2>Posts:</h2>
+                {% for post in posts %}
+                    <p>{{ post.title }}</p>
+                {% endfor %}
+            </div>
+            <div class="col text-start bg-dark rounded ms-1">
+                <div class="d-flex p-2 bd-highlight align-self-center">
+                    <h2>Characters:</h2>
+                    {% if request.user.id == user.id %}
+                        <button type="button" class="ms-auto align-self-center btn btn-primary btn-sm">add character</button>
+                    {% endif %}
+                </div>
+                    {% for character in characters %}
+                        <div class="d-flex p-2 bd-highlight align-self-center">
+                            {{ character.name }}
+                            <ul>
+                                <il>{{ character.strength }}</il>
+                                <il>{{ character.agility }}</il>
+                                <il>{{ character.attack }}</il>
+                                <il>{{ character.defense }}</il>
+                            </ul>
+                        </div>
+                    {% endfor %}
+            </div>
+        </div>
+    </div>
+
+
+{% endblock content %}

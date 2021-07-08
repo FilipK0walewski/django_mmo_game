@@ -1,0 +1,29 @@
+{% extends "users/base.html" %}
+{% load crispy_forms_tags %}
+{% block content %}
+        <div class="row h-100">
+            <div class="col-md my-auto w-100">
+                <h1 class="display-1">Sword</h1>
+                <h1>&</h1>
+                <h1 class="display-1">Sandals</h1>
+                <h2>ONLINE</h2>
+            </div>
+
+            <div class="col-sm py-5 my-auto bg-dark rounded login-div">
+                <form method="post">
+                    {% csrf_token %}
+                    <fieldset class="form-group mb-2 login-form">
+                        {{ form|crispy }}
+                    </fieldset>
+
+                    <button class="btn btn-primary mt-3" type="submit">Log In</button>
+                </form>
+                <a href="#">Forgot Password?</a>
+                <div class="dropdown-divider"></div>
+                <small class="text-muted">
+                    Need an account? <a href="{% url 'register' %}" class="ml-2">Sign in</a>
+                </small>
+            </div>
+        </div>
+
+{% endblock content %}

@@ -1,0 +1,1719 @@
+{% extends "game/base.html" %}
+{% load static %}
+{% block content %}
+    <input type="text" id="character_name" placeholder="Character name..." style="display: none;">
+    <script>
+        const ws = new WebSocket('ws://' + window.location.host + '/ws/test_game/')
+
+        class TextButton extends Phaser.GameObjects.Text{
+            constructor(scene, x, y, text, style, on_click, background=false){
+                super(scene, x, y, text, style)
+
+                this.enabled = true
+                this.setInteractive({useHandCursor: true})
+                .on('pointerover', () => {
+                    if (this.enabled == true){
+                        this.enterButtonHoverState()
+                    }
+                })
+                .on('pointerout', () => {
+                    if (this.enabled == true){
+                        this.enterButtonRestState()
+                    }
+                })
+                .on('pointerdown', () => {
+                    if(this.enabled == true){
+                        this.enterButtonActiveState()
+                    }
+                })
+                .on('pointerup', () => {
+                    if (this.enabled == true){
+                        this.enterButtonHoverState()
+                        on_click()
+                    }
+                    else {
+                        console.log('im disabled :)')
+                    }
+                })
+                this.setOrigin(.5)
+
+                if (background == true){
+                    let graphics = this.add.graphics()
+                    graphics.fillStyle(0x4a2400, 1)
+                }
+
+                scene.add.existing(this)
+            }
+
+            disable(){
+                this.enabled = false
+                this.setStyle({fill: '#282828'})
+                this.setInteractive(false)
+            }
+
+            endable(){
+                this.enabled = true
+                this.setStyle({ fill: '#fff '})
+                this.setInteractive(true)
+            }
+
+            enterButtonHoverState(){
+                this.setStyle({fill: '#ff0'})
+            }
+
+            enterButtonRestState() {
+                this.setStyle({ fill: '#fff '})
+            }
+
+            enterButtonActiveState() {
+                this.setStyle({ fill: '#0ff' })
+            }
+
+        }
+
+        class ImageButton extends Phaser.GameObjects.Sprite{
+            constructor(scene, x, y, texture, on_click, origin=.5){
+                super(scene, x, y, texture)
+
+                this.setInteractive({useHandCursor: true})
+                .on('pointerup', () => {
+                    on_click()
+                })
+                .setOrigin(origin)
+
+                scene.add.existing(this)
+            }
+        }
+
+        class LoadingScene extends Phaser.Scene{
+            constructor(){
+                super('loading_scene')
+            }
+
+            preload(){
+
+                this.complete = false
+                this.skins = []
+
+                let progress_bar = this.add.graphics()
+                let progress_box = this.add.graphics()
+                let width = this.cameras.main.width
+                let height = this.cameras.main.height
+                progress_box.fillStyle(0x222222, .8)
+                progress_box.fillRect(160, 240, 320, 50)
+
+                let loading_text = this.add.text(width * .5, height * .5 - 30, 'LOADING').setOrigin(.5)
+                let percent_text = this.add.text(width * .5, height * .5 - 10, '0%').setOrigin(.5)
+                let asset_text = this.add.text(width * .5, height * .5 + 25, '').setOrigin(.5, .5)
+
+                this.load.on('progress', (value) => {
+                    percent_text.setText(parseInt(value * 100) + '%')
+                    progress_bar.clear()
+                    progress_bar.fillStyle(0xffffff)
+                    progress_bar.fillRect(170, 250, 300 * value, 30)
+                })
+
+                this.load.on('fileprogress', (file) => {
+                    asset_text.setText('LOADING ASSET: ' + file.key.toUpperCase())
+                })
+
+                this.load.on('complete', () => {
+                    console.log('complete')
+                    loading_text.setText('LOADING COMPLETE')
+                    asset_text.setText('PRESS SPACE')
+                    this.complete = true
+                })
+
+                '{% for skin in skins %}'
+                    '{% with skin.name|slugify as image_path %}'
+                        '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/Faceset.png" as image_path %}'
+                            this.load.image('{{ skin.name }}', '{% static image_path %}')
+                            this.skins.push('{{ skin.name }}')
+                        '{% endwith %}'
+                        '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/SpriteSheet.png" as image_path %}'
+                            name = '{{ skin.name }}' + 'Sheet'
+                            this.load.atlas(name, '{% static image_path %}', '{% static "game/assets/character_frames.json" %}')
+                        '{% endwith %}'
+                    '{% endwith %}'
+                '{% endfor %}'
+            }  
+
+            create(){
+                this.cursors = this.input.keyboard.createCursorKeys()
+            }
+
+            update(){
+                if (this.complete == true){
+                    if (this.cursors.space.isDown){
+                        this.complete = false
+                        this.scene.start('main_menu', {skins: this.skins})
+                    }
+                }
+            }
+        }
+
+
+        class Menu extends Phaser.Scene{
+            constructor(name){
+                super(name)
+                this.name = name
+            }
+
+            init(data){
+                this.skins = data.skins
+                
+                this.w = this.sys.game.canvas.width
+                this.h = this.sys.game.canvas.height
+                this.btn_style = {fontSize: '24px', fill: '#fff', strokeThickness: 8, stroke: '#555'}
+                this.title_style = {fontSize: '50px', fill: '#fff', strokeThickness: 8, stroke: '#555'}
+                this.font_style = {fontSize: '16px', fill: '#fff', strokeThickness: 8, stroke: '#555'}
+
+                this.input = document.getElementById('character_name')
+                this.input.style.position = 'absolute'
+                this.input.style.width = '20%'
+                this.input.style.left = '40%'
+                this.input.style.top = '12.5%'
+            }
+
+            change_scene(new_scene){
+                if (new_scene == 'create_character'){
+                    this.input.style.display = 'block'
+                }
+                else{
+                    this.input.style.display = 'none'
+                }
+                this.scene.start(new_scene, {skins: this.skins})
+            }
+        }
+
+
+        class MainMenu extends Menu{
+            constructor(){
+                super('main_menu')
+            }
+
+            create(){
+
+                this.add.text(this.w * .5, this.h * .25, 'SWORD AND SANDALS', this.btn_style).setOrigin(.5)
+                let n = 0
+                '{% for character in characters %}'
+                    n += 1
+                '{% endfor %}'
+
+                if (n == 0){
+                    this.new_game_btn = new TextButton(this, this.w * .5, this.h * .5, 'NEW GAME', this.btn_style, () => this.change_scene('create_character')) 
+                    this.load_game_btn = new TextButton(this, this.w * .5, this.h * .6, 'LOAD GAME', this.btn_style, () => this.change_scene('choose_character')) 
+                }
+                else if (n > 0){
+                    this.load_game_btn = new TextButton(this, this.w * .5, this.h * .5, 'LOAD GAME', this.btn_style, () => this.change_scene('choose_character')) 
+                    this.new_game_btn = new TextButton(this, this.w * .5, this.h * .6, 'NEW GAME', this.btn_style, () => this.change_scene('create_character')) 
+                }
+                
+                this.credits_btn = new TextButton(this, this.w * .5, this.h * .7, 'CREDITS', this.btn_style, () => this.change_scene('credits'))
+            }
+        }
+
+        
+        class Credits extends Menu{
+            constructor(){
+                super('credits')
+            }
+
+            create(){
+                this.add.text(this.w * .5, this.h * .4, 'CREATED BY', this.font_style).setOrigin(.5)
+                this.add.text(this.w * .5, this.h * .5, 'Filip Kowalewski', this.title_style).setOrigin(.5)
+                this.back_btn = new TextButton(this, this.w * .5, this.h * .8, 'BACK', this.btn_style, () => this.change_scene('main_menu'))
+            }
+        }
+
+        class CreateCharacterMenu extends Menu{
+            constructor(){
+                super('create_character')
+            }
+
+            preload(){
+                this.load.image('arrow', '{% static "game/assets/buttons/arrow_r.png" %}')
+                this.load.image('face_box', '{% static "game/assets/Actor/FacesetBox.png" %}')
+                this.load.image('plus', '{% static "game/assets/buttons/plus.png" %}')
+                this.load.image('minus', '{% static "game/assets/buttons/minus.png" %}')
+                let name = ''
+            }
+
+            create(){
+                
+                this.points_to_give = 9
+
+                this.stats = {
+                    strength: 1,
+                    agility: 1,
+                    attack: 1,
+                    defense: 1,
+                    vitality: 1,
+                    charisma: 1,
+                    stamina: 1,
+                    magick: 1,
+                    points_left: 9
+                }
+
+                this.displayed_stats = {}
+
+                this.n = 0
+                this.add.image(this.w * .5, this.h * .15, 'face_box')
+                this.character_avatar = this.add.image(this.w * .5, this.h * .15, this.skins[this.n])
+                this.character_class = this.add.text(this.w * .5, this.h * .225, this.splitName(this.skins[this.n])).setOrigin(.5)
+
+                this.left_arrow = new ImageButton(this, this.w * .4, this.h * .15, 'arrow', () => this.changeCharacter(false)).setAngle(180)
+                this.right_arrow = new ImageButton(this, this.w * .6, this.h * .15, 'arrow', () => this.changeCharacter())
+                
+                let temp = .275
+                for (let stat in this.stats){
+                    let text = stat + ':'
+                    this.add.text(this.w * .25, this.h * temp, text)
+                    this.displayed_stats[stat] = this.add.text(this.w * .75, this.h * temp, this.stats[stat])
+                    if (stat != 'points_left'){
+                        new ImageButton(this, this.w * .71, this.h * temp, 'minus', () => this.minus(stat), 0)
+                        new ImageButton(this, this.w * .78, this.h * temp, 'plus', () => this.plus(stat), 0)
+                    }
+                    temp += .045
+                }
+
+                new TextButton(this, this.w * .3, this.h * .8, 'BACK', {}, () => this.change_scene('main_menu')).setOrigin(.5)
+                new TextButton(this, this.w * .7, this.h * .8, 'CREATE', {}, () => this.submit()).setOrigin(.5)
+
+                ws.addEventListener('message', msg => {
+                    let message = JSON.parse(msg.data)
+                    let action = message.message.action
+                    let data = message.message.data
+                    if (action == 'add_character'){
+                        alert(data.text)
+                        if (data.available == true){
+                            this.game.scene.add('willage', Willage, true, {player_name: this.input.value, player_skin: this.skins[this.n], player_stats: this.stats})
+                        }
+                    }
+                })
+            }
+
+            submit(){
+                this.input.style.display = 'none'
+                this.stats['level'] = 1
+                this.stats['gold'] = 0
+                let skin = this.skins[this.n]
+                let message = {
+                    action: 'add_character',
+                    username: '{{ request.user.username }}',
+                    name: this.input.value,
+                    skin: skin,
+                    stats: this.stats
+                }
+                ws.send(JSON.stringify(message))
+
+                //this.game.scene.add('willage', Willage, true, {player_name: this.input.value, player_skin: skin, player_stats: this.stats})
+            }
+
+            minus(stat){
+                if (this.stats[stat] != 1){
+                    this.stats[stat] -= 1
+                    this.displayed_stats[stat].text = this.stats[stat]
+                    this.stats.points_left += 1
+                    this.displayed_stats.points_left.text = this.stats.points_left
+                }
+            }
+
+            plus(stat){
+                if (this.stats.points_left != 0){
+                    this.stats[stat] += 1
+                    this.displayed_stats[stat].text = this.stats[stat]
+                    this.stats.points_left -= 1
+                    this.displayed_stats.points_left.text = this.stats.points_left
+                }
+            }
+
+            changeCharacter(forward=true){
+                if (forward == true){
+                    this.n += 1
+                }
+                else if (forward == false){
+                    this.n -= 1
+                }
+
+                if (this.n == this.skins.length){
+                    this.n = 0
+                }
+                else if (this.n == -1){
+                    this.n = this.skins.length - 1
+                }
+                this.character_avatar.setTexture(this.skins[this.n])
+                this.character_class.text = this.splitName(this.skins[this.n])
+            }
+
+            splitName(name){
+                let counter = 0
+                let return_name = ''
+                for (let i = 0; i < name.length; i++){
+                    if (name[i] == name[i].toUpperCase()){
+                        counter += 1
+                    }
+                    if (counter == 2){
+                        return_name += ' '
+                        counter = 1
+                    }
+                    return_name += name[i]
+                }
+                return return_name
+            }
+        }
+
+        class ChooseCharacterMenu extends Menu{
+            constructor(){
+                super('choose_character')
+            }
+
+            create(){
+                let characters = []
+
+                '{% for character in characters %}'
+                    characters.push('{{ character.name }}')
+                '{% endfor %}'
+                    
+                this.add.text(this.w * .5, this.h * .1, 'Your Characters:', this.title_style).setOrigin(.5)
+                for (let i = 0; i < characters.length; i++){
+                    let btn = new TextButton(this, this.w * .5, this.h * (i + 4) * .05, characters[i], {}, () => this.pick_character(characters[i])).setOrigin(.5)
+                }
+                this.back_btn = new TextButton(this, this.w * .5, this.h * .8, 'BACK', this.btn_style, () => this.change_scene('main_menu')).setOrigin(.5)
+            }
+
+            pick_character(character_name){
+
+                let stats = {}
+                let skin = ''
+
+                // change here 
+                '{% for character in characters %}'
+                    if ('{{ character.name }}' == character_name){
+                        stats = {
+                            level: '{{ character.level }}',
+                            strength: '{{ character.strength }}',
+                            agility: '{{ character.agility }}',
+                            attack: '{{ character.attack }}',
+                            defense: '{{ character.defense }}',
+                            vitality: '{{ character.vitality }}',
+                            charisma: '{{ character.charisma }}',
+                            stamina: '{{ character.stamina }}',
+                            magick: '{{ character.magick }}',
+                            gold: '{{ character.gold }}'
+                        }
+                        skin = '{{ character.texture }}'
+                    }
+                '{% endfor %}'
+                console.log(skin)
+                this.game.scene.add('willage', Willage, true, {player_name: character_name, player_stats: stats, player_skin: skin})
+                
+            }   
+        }
+
+        class Arena extends Phaser.Scene{
+            constructor(){
+                super('arena')
+            }
+
+            preload(){
+                //map
+                this.load.tilemapTiledJSON('dungeon_arena', '{% static "game/assets/dungeon_arena.json" %}')
+            }
+
+            create(data){
+                this.scene.sleep('willage')
+                let info = data.message
+                
+                this.group_name = info.group_name
+                this.p_0 = info.player_0
+                this.p_1 = info.player_1
+
+                let w = this.sys.game.canvas.width
+                let h = this.sys.game.canvas.height
+                
+                // map
+                const map = this.make.tilemap({key: 'dungeon_arena', tileWidth: 16, tileHeight: 16})
+                const floor = map.addTilesetImage('dungeon_floor', 'dungeon_floor_tileset')
+                const wall = map.addTilesetImage('dungeon_wall', 'dungeon_simple_tileset')
+                map.createLayer('floor', floor, 0, 0)
+                this.wall_layer = map.createLayer('wall', [wall], 0, 0)
+                this.resetArena(info, true)
+                
+                // hud
+                this.hud = new DuelHUD('testHUD', this, w, h)
+                this.scene.add('testHUD', this.hud, true)
+
+                // test
+                this.player = this.scene.get('willage').player
+
+                //physics
+                this.you.setGravityY(100)
+                this.enemy.setGravityY(100)
+                //collisions
+                this.wall_layer.setCollision([61, 64, 65, 71, 75, 101, 104, 105])
+                this.physics.add.collider(this.you, this.wall_layer)
+                this.physics.add.collider(this.enemy, this.wall_layer)
+                // zones
+                let zones = this.physics.add.staticGroup()
+                zones.add(this.add.zone(0, h * .65, 1280 , 100))
+                this.physics.add.collider(this.you, zones)
+                this.physics.add.collider(this.enemy, zones)
+            }
+
+            update(){
+                // console.log('floor: ' + this.you.body.velocity.y)
+                if (this.you.body.velocity.y == 0 && this.you.walking == false){
+                    this.you.setVelocityX(0)
+                    this.you.play('idle_down')
+                    this.you.setFlipX(false)
+                }
+                if (this.enemy.body.velocity.y == 0 && this.enemy.walking == false){
+                    this.enemy.setVelocityX(0)
+                    this.enemy.play('idle_down')
+                    this.enemy.setFlipX(false)
+                }
+                this.you.updateTextPos()
+                this.enemy.updateTextPos()
+            }
+
+            exit(){
+                let message = {
+                    action: 'fight_end',
+                    data: {
+                        winner: 'winner test',
+                        group_name: this.group_name,
+                        player_0: this.p_0.character_name,
+                        player_1: this.p_1.character_name,
+                    }
+                }
+                // console.log(this.p_0 + ' ' + this.p_1)
+                ws.send(JSON.stringify(message))
+            }
+
+            resetTimer(play=true){
+                clearTimeout(this.hud.timeout)
+                this.hud.time_left = this.hud.start_time
+                this.hud.time_display.text = this.hud.start_time
+                if (play == true){
+                    this.hud.timeout = setTimeout(() => {  this.hud.countdown() }, 1000)
+                }
+            }
+            
+            resetArena(data, first_time=false){
+                
+                if (first_time == true){
+                    if (data.player_0.owner == '{{ request.user.username }}'){
+                        this.you = new Character(this, data.player_0.skin, data.player_0.character_name, data.player_0.pos.x, data.player_0.pos.y, data.player_0.character_stats, data.player_0.owner)
+                        this.enemy = new Character(this, data.player_1.skin, data.player_1.character_name, data.player_1.pos.x, data.player_1.pos.y, data.player_1.character_stats, data.player_1.owner)
+                        if (data.first_move == 0){
+                            this.you.can_move = true
+                        }
+                    }
+                    else{
+                        this.you = new Character(this, data.player_1.skin, data.player_1.character_name, data.player_1.pos.x, data.player_1.pos.y, data.player_1.character_stats, data.player_1.owner)
+                        this.enemy = new Character(this, data.player_0.skin, data.player_0.character_name, data.player_0.pos.x, data.player_0.pos.y, data.player_0.character_stats, data.player_0.owner)
+                        if (data.first_move == 1){
+                            this.you.can_move = true
+                        }
+                    }
+                }
+                else if (first_time == false){
+                    this.resetTimer()
+                    if (data.player_0.owner == '{{ request.user.username }}'){
+                        if (data.player_1.owner == this.enemy.owner){
+                            console.log('same enemy as before')
+                        }
+                        else{
+                            console.log('another enemy')
+                            this.enemy.character_name = data.player_1.character_name
+                            this.enemy.owner = data.player_1.character_name
+                        }
+                        this.you.setPos(100, 240)
+                        this.enemy.setPos(540, 240)
+                    }
+                    else if (data.player_1.owner == '{{ request.user.username }}'){
+                        if (data.player_0.owner == this.enemy.owner){
+                            console.log('same enemy as before')
+                        }
+                        else{
+                            console.log('another enemy')
+                            this.enemy.character_name = data.player_0.character_name
+                            this.enemy.owner = data.player_0.character_name
+                        }
+                        this.you.setPos(540, 240)
+                        this.enemy.setPos(100, 240)
+                    }
+                }
+            }
+        }
+        
+        class Willage extends Phaser.Scene{
+
+            constructor(){
+                super('willage')
+            }
+
+            init(){
+                this.w = this.sys.game.canvas.width
+                this.h = this.sys.game.canvas.height
+                this.nn = 0
+            }
+
+            preload(){
+                //map
+                this.load.tilemapTiledJSON('dungeon_0', "{% static 'game/assets/dungeon_0.json' %}")
+                this.load.image('dungeon_floor_tileset', "{% static 'game/assets/dungeon_floor.png' %}")
+                this.load.image('dungeon_simple_tileset', "{% static 'game/assets/dungeon_simple.png' %}")
+            }
+
+            create(data){
+                
+                // temp
+                this.arena_created = false
+                this.arena = undefined
+
+                this.scene.remove('main_menu')
+                this.scene.remove('credits')
+                this.scene.remove('create_character')
+                this.scene.remove('choose_character')
+                //this.scene.remove('loading_scene')
+                
+                //map
+                const map = this.make.tilemap({key: 'dungeon_0', tileWidth: 16, tileHeight: 16})
+                const floor = map.addTilesetImage('dungeon_floor', 'dungeon_floor_tileset')
+                const wall = map.addTilesetImage('dungeon_wall', 'dungeon_simple_tileset')
+                map.createLayer('floor', floor, 0, 0)
+                this.wall_layer = map.createLayer('wall', [wall], 0, 0)
+
+                //player
+                let start_pos = getRandomPos(this)
+                this.player = new Character(this, data.player_skin, data.player_name, start_pos[0], start_pos[1], data.player_stats, '{{ request.user.username }}')
+                this.player.setImmovable()
+                
+                //other users
+                this.online_users = []
+                this.subscenes = []
+                this.current_info_scene = ''
+
+                //collisions
+                this.wall_layer.setCollision([61, 64, 65, 71, 75, 101, 104, 105])
+                this.physics.add.collider(this.player, this.wall_layer)
+                
+                // camera
+                // let camera_config = {
+                //     name: 'player_camera',
+                //     x: 0,
+                //     y: 0,
+                //     width: this.sys.scale.width,
+                //     height: this.sys.scale.height,
+                //     zoom: 1,
+                //     rotation: 0,
+                //     scrollX: 0,
+                //     scrollY: 0,
+                //     roundPixels: false,
+                //     visable: true,
+                //     backgroundColor: false,
+                //     bounds: null
+                // }
+                // this.cameras.fromJSON(camera_config)
+                // console.log(this.cameras)
+                this.cameras.main.startFollow(this.player)
+
+                // gui
+                // this.gui = new GUI('gui', this, this.w, this.h)
+                // this.scene.add('gui', this.gui, true)
+
+                //game logic
+                ws.addEventListener('message', msg =>{
+                    console.log('------------')
+                    // console.log('willage:\n')
+                    let message = JSON.parse(msg.data)
+                    let action = message.message.action
+                    let data = message.message.data
+
+                    // NEW USER
+                    if (action == 'new_user_joined'){
+                        console.log('length: ' + data.other_users.length)
+                        if (data.new_user.character_name == this.player.character_name && data.new_user.owner == this.player.owner){
+                            console.log('u are new user')
+                            if (typeof(data.other_users) == 'object'){
+                                for (let i = 0; i < data.other_users.length; i++){
+                                    this.addUser(data.other_users[i])
+                                }
+                            }
+                        }
+                        else{
+                            console.log('new user joined')
+                            this.online_users.forEach((user, n) => {
+                                console.log(n)
+                                if (user.owner == data.new_user.owner){
+                                    console.log('channels didnt work')
+                                    this.scene.remove(user.info_scene_name)
+                                    user.remove()
+                                    this.online_users.splice(n, 1)
+                                }
+                            })
+                            this.addUser(data.new_user)
+                        }
+                    }
+                    // REMOVE USER
+                    else if (action == 'remove_user'){
+                        console.log('remove user')
+                        this.removeUser(data.user_to_remove)
+                    }
+                    // FIGHT REQUEST
+                    else if (action == 'fight_request'){
+                        this.addNottification(data)
+                    }
+                    // FIGHT START
+                    else if (action == 'fight_between'){
+                        let temp
+                        // console.log(data.player_1.character_name + ' vs ' + data.player_0.character_name)
+                        if (data.player_0.owner == this.player.owner){
+                            this.player.in_fight = true
+                            temp = 0
+                        }
+                        else if (data.player_1.owner == this.player.owner){
+                            this.player.in_fight = true
+                            temp = 1
+                        }
+
+                        if (this.player.in_fight == true){
+                            this.player.text_over_head.text += '(fighting)'
+                            if (this.scene.get(this.player.character_name)){
+                                this.scene.get(this.player.character_name).update_data()
+                            }
+                            if (temp == 0){
+                                let u = this.findUserByCharacterName(data.player_1.character_name)
+                                u.in_fight = true
+                                u.text_over_head.text += '(fighting)'
+                                if (this.scene.get(u.character_name)){
+                                    this.scene.get(u.character_name).update_data()
+                                }
+                            }
+                            else if (temp == 1){
+                                let u = this.findUserByCharacterName(data.player_0.character_name)
+                                u.in_fight = true
+                                u.text_over_head.text += '(fighting)'
+                                if (this.scene.get(u.character_name)){
+                                    this.scene.get(u.character_name).update_data()
+                                }
+                            }
+                        }
+                        else{
+                            let u_0 = this.findUserByCharacterName(data.player_0.character_name)
+                            let u_1 = this.findUserByCharacterName(data.player_1.character_name)
+                            u_0.in_fight = true
+                            u_1.in_fight = true
+                            u_0.text_over_head.text += '(fighting)'
+                            u_1.text_over_head.text += '(fighting)'
+                            if (this.scene.get(u_0.character_name)){
+                                this.scene.get(u_0.character_name).update_data()
+                            }
+                            if (this.scene.get(u_1.character_name)){
+                                this.scene.get(u_1.character_name).update_data()
+                            }
+                        }
+                        if (temp == 0 || temp == 1){
+                            // console.log(this.scene.get('arena'))
+                            // CHANGE HERE
+                            // if (this.scene.get('arena')){
+                            //     this.scene.sleep(this.current_info_scene)
+                            //     this.scene.switch('arena')
+                            //     this.scene.get('arena').resetArena(data)
+                            //     this.scene.wake('testHUD')
+                            // }
+                            // else{
+                            //     this.game.scene.add('arena', Arena, true, {message: data})
+                            // }
+                            
+                            this.game.scene.add('arena', Arena, true, {message: data, arena_created: this.arena_created})
+                            this.arena = this.scene.get('arena')
+                            if (this.arena_created == false){
+                                this.arena_created = true
+                            }
+                        }
+                    }
+                    // FIGHT END
+                    else if (action == 'fight_end'){
+                        if (this.player.in_fight == false){
+                            let data = message.message.data
+                            console.log(data.player_0 + ' vs ' + data.player_1  + ' fight wins :\n' + data.winner)
+                            if (data.player_0 == this.player.character_name){
+                                this.player.exit_fight()
+                                this.findUserByCharacterName(data.player_1).exit_fight()
+                            }
+                            else if (data.player_1 == this.player.character_name){
+                                this.player.exit_fight()
+                                this.findUserByCharacterName(data.player_0).exit_fight()
+                            }
+                            else{
+                                this.findUserByCharacterName(data.player_0).exit_fight()
+                                this.findUserByCharacterName(data.player_1).exit_fight()
+                            }
+                        }
+                        else{
+                            console.log('player in fight')
+                        }
+                    }
+                    // POS UPDATE
+                    else if (action == 'position_update'){
+                        let user_to_update = data.user_to_update
+                        let start_pos = user_to_update.position
+                        if (user_to_update.player_name != '{{ request.user.username }}'){
+                            //console.log(user_to_update.character_name + ': ' + user_to_update.state + ' ' + user_to_update.direction)
+                            this.online_users.forEach((user, index, users) => {
+                                if (user_to_update.character_name == user.character_name){
+                                    user.state = user_to_update.state
+                                    user.direction = user_to_update.direction
+                                    user.path.push({
+                                        state: user_to_update.state,
+                                        direction: user_to_update.direction,
+                                        start_pos: {
+                                            x: start_pos.x,
+                                            y: start_pos.y
+                                        }
+                                    })
+                                }
+                            })
+                        }
+                    }
+                    // TEST
+                    else if (action == 'test'){
+                        console.log(data.text)
+                    }
+                    
+                    // IN FIGHT
+                    if (this.player.in_fight == true){
+                        //FIGHT MOVE
+                        if (action == 'fight_move'){
+                            this.arena.resetTimer()
+                            if (data.player == this.arena.you.owner){
+                                this.arena.you.can_move = false
+                                this.arena.hud.whos_move.text = 'enemy move'
+                            }
+                            else{
+                                this.arena.you.can_move = true
+                                this.arena.hud.whos_move.text = 'your move'
+                                let move = data.player_move.move
+                                let direction = data.player_move.direction
+                                
+                                switch (move){
+                                    case 'move':
+                                    this.arena.enemy.physics_move(direction)
+                                        break
+                                    case 'attack':
+                                        this.arena.enemy.do_attack(direction)
+                                        break
+                                    case 'jump':
+                                        this.arena.enemy.physics_jump(direction)
+                                        break
+                                }
+                            }
+                        }
+                        // FIGHT END
+                        else if (action == 'fight_end'){
+                            console.log('quitting arena :#')
+                            this.arena.resetTimer(false)
+                            // change remove to sleep later
+                            this.scene.wake('willage')
+                            this.scene.get('willage').endFight(data)
+                            this.scene.remove('testHUD')
+                            this.scene.remove('arena')
+                        }
+                    }
+                })
+                this.send_player_pos()
+                this.cursors = this.input.keyboard.createCursorKeys()
+            }
+
+            endFight(data){
+                // console.log('end fight\n' + data)
+                if (data.player_0 == this.player.character_name){
+                    this.findUserByCharacterName(data.player_1).exit_fight()
+                }
+                else if (data.player_1 == this.player.character_name){
+                    this.findUserByCharacterName(data.player_0).exit_fight()
+                }
+                this.player.exit_fight()
+                // this.scene.sleep('testHUD')
+                // this.scene.sleep('arena')
+            }
+
+            findUserByCharacterName(name){
+                let return_user
+                for (let i = 0; i < this.online_users.length; i++){
+                    if (this.online_users[i].character_name == name){
+                        return_user = this.online_users[i]
+                        break
+                    }
+                }
+                return return_user
+            }
+
+            findCharacterByUserName(username){
+                for (let i = 0; i < this.online_users.length; i++){
+                    if (this.online_users[i].owner == username){
+                        return this.online_users[i]
+                    }
+                }
+                return 0
+            }
+
+            update(){
+                
+                if (this.player.walking == false){
+                    if (this.cursors.left.isDown){
+                        this.player.state = 'walk'
+                        this.player.direction = 'left'
+                        this.player.new_walk()
+                        this.updatePosToServer()
+                    }
+                    else if (this.cursors.right.isDown){
+                        this.player.state = 'walk'
+                        this.player.direction = 'right'
+                        this.player.new_walk()
+                        this.updatePosToServer()
+                    }
+                    else if (this.cursors.up.isDown){
+                        this.player.state = 'walk'
+                        this.player.direction = 'up'
+                        // this.moveCharacter(this.player)
+                        this.player.new_walk()
+                        this.updatePosToServer()
+                    }
+                    else if (this.cursors.down.isDown){
+                        this.player.state = 'walk'
+                        this.player.direction = 'down'
+                        // this.moveCharacter(this.player)
+                        this.player.new_walk()
+                        this.updatePosToServer()
+                    }
+                    else{
+                        this.player.state = 'idle'
+                        this.player.idle()
+                    }
+                }
+
+                this.online_users.forEach((user) => {
+                    if (user.walking == false){
+                        if (user.path.length == 0){
+                            user.idle()
+                        }
+                        else if (user.path.length > 0){
+                            user.setVelocity(0, 0)
+                            let move = user.path[0]
+                            user.state = move.state
+                            user.direction = move.direction
+                            user.new_walk()
+                            user.path.shift()
+                        }
+                    }
+                })
+            }
+
+            updatePosToServer(){
+                let message = this.player.getPosMessage()
+                ws.send(JSON.stringify(message))
+            }
+
+            addUser(user){
+                console.log(user)
+                let new_user = new Character(this, user.skin, user.character_name, user.pos.x, user.pos.y, user.character_stats, user.owner, user.user_id)
+                new_user.setImmovable()
+                this.physics.add.collider(new_user, this.wall_layer)
+                this.physics.add.collider(new_user, this.player)
+                this.online_users.push(new_user)
+            }
+
+            removeUser(user){
+                console.log('user to remove: ' + user.character_name)
+                let n = 0
+                if (this.player.character_name != user.character_name){
+                    for (let i = 0; i < this.online_users.length; i++){
+                        if (this.online_users[i].character_name == user.character_name){
+                            console.log(user.character_name + ' disconnected from server\ntest: ' + this.online_users[n].info_scene_name)
+                            // this.scene.remove(user.info_scene_name)
+                            // this.online_users[n].info_scene.destroy()
+                            this.online_users[n].remove()
+                            this.online_users.splice(n, 1)
+                        }
+                        n += 1
+                    }
+                } 
+                else{
+                    console.log('cant remove yourself')
+                }
+            }  
+
+            addNottification(data){
+                let w = this.sys.game.canvas.width
+                let h = this.sys.game.canvas.height
+                let scene_name =  'notification' + this.nn.toString()
+                this.nn += 1
+                let notification = new Notification(scene_name, this, data, w, h)
+                this.scene.add(scene_name, notification, true)
+            }
+
+            send_player_pos(){
+                let pos = this.player.getPos()
+                let message = {
+                    action: 'join_server',
+                    player_name: this.player.owner,
+                    character_name: this.player.character_name,
+                    character_stats: this.player.getStats(),
+                    position: {
+                        x: pos.x,
+                        y: pos.y
+                    }
+                }
+                ws.send(JSON.stringify(message))
+            }
+        }
+
+        class Character extends Phaser.Physics.Arcade.Sprite{
+            constructor(scene, texture, name, x, y, stats, owner, id=-1){
+
+                let sheet_name = texture + 'Sheet'
+    
+                super(scene, x, y, sheet_name)
+                this.scene = scene
+                this.owner = owner
+                this.character_name = name
+                this.texture = sheet_name
+                this.face = texture
+
+                // ID
+                this.id = id
+
+                // movement
+                this.state = 'idle'
+                this.direction = 'down'
+                this.walking = false
+                this.path = []
+
+                // states
+                this.busy = false
+                this.in_fight = false
+                this.can_move = false
+                
+                // stats
+                this.level = stats.level
+                this.gold = stats.gold
+                this.strength = stats.strength
+                this.agility = stats.agility
+                this.attack = stats.attack
+                this.defense = stats.defense
+                this.vitality = stats.vitality
+                this.charisma = stats.charisma
+                this.stamina = stats.stamina
+                this.magick = stats.magick
+
+                this.setInteractive({useHandCursor: true})
+                .on('pointerdown', () => this.showInfo())
+
+                this.on('animationstart-attack', () => { this.busy = true })
+                this.on('animationcomplete-attack', () => { 
+                    this.setFlipX(false)
+                    this.play('idle_down')
+                    this.busy = false 
+                })
+                
+                // add text
+                let f_color = '#0033cc'
+                if (owner == '{{ request.user.username }}'){
+                    f_color = '#ff9900'
+                }
+                this.style = {fill: f_color, fontSize: '12px', stroke: '#000', strokeThickness: 3}
+                this.text_over_head = scene.add.text(x, y - 16, name, this.style).setOrigin(0.5)
+                // anims
+                this.createAnims()
+                // enable physics
+                this.scene.physics.world.enableBody(this)
+                this.walking = false
+                // add to main scene
+                this.scene.add.existing(this)
+
+                // info scene
+                console.log('scene key: ' + this.scene.scene.key)
+                if (this.scene.scene.key == 'willage'){
+                    this.info_scene_name = name + '_scene'
+                    this.info_scene = new CharacterInfo(this.info_scene_name, this)
+                    if (this.scene.scene.get(this.info_scene_name)){
+                        console.log('info scene exists')
+                        this.scene.scene.remove(this.info_scene_name)
+                    }
+                    else{
+                        console.log('info scene does not exists')
+                    }
+                    this.scene.scene.add(this.info_scene_name, this.info_scene, true)
+                    this.scene.scene.sleep(this.info_scene_name)
+                }
+                
+            }
+            
+            // update text
+            updateTextPos(){
+                this.text_over_head.setPosition(this.x, this.y - 16)
+            }
+
+            // show info
+            showInfo(){
+                if (this.scene.scene.key == 'willage'){
+                    if (this.scene.scene.isSleeping(this.info_scene_name)){
+                        if (this.scene.current_info_scene != ''){
+                            this.scene.scene.sleep(this.scene.current_info_scene)
+                        }
+                        this.scene.scene.wake(this.info_scene_name)
+                        this.scene.current_info_scene = this.info_scene_name
+                    }
+                    else{
+                        this.scene.scene.sleep(this.info_scene_name)
+                        this.scene.current_info_scene = ''
+                    } 
+                }
+                
+            }
+            
+            // out of combat
+            new_walk(distance=16, first_step=true){
+                if (first_step == true){
+                    this.walking = true 
+                    this.play('walk_' + this.direction, true)
+
+                    switch (this.direction) {
+                        case 'left':
+                            this.scene.physics.moveTo(this, this.x - 16, this.y)
+                            break
+                        case 'right':
+                            this.scene.physics.moveTo(this, this.x + 16, this.y)
+                            break
+                        case 'up':
+                            this.scene.physics.moveTo(this, this.x, this.y - 16)
+                            break
+                        case 'down':
+                            this.scene.physics.moveTo(this, this.x, this.y + 16)
+                            break
+                    }
+                }
+
+                if (distance != 0){
+                    this.text_over_head.setPosition(this.x, this.y - 16)
+                    setTimeout(() => {this.new_walk(distance - 1, false)}, 15)
+                }
+                else{
+                    // console.log('end:\nx: ' + this.x + ', y: ' + this.y)
+                    this.walking = false
+                    this.setVelocity(0, 0)
+                }
+            }
+
+            idle(){
+                this.play('idle_' + this.direction)
+            }
+
+            //in combat
+
+            enter_fight(){
+                this.in_fight = true
+                this.text_over_head.text = this.character_name + '(in fight)'
+                if (this.scene.subscenes[this.character_name]){
+                    this.scene.subscenes[this.character_name].update_data()
+                }
+            }
+
+            exit_fight(){
+                this.in_fight = false
+                this.text_over_head.text = this.character_name
+                if (this.scene.subscenes[this.character_name]){
+                    this.scene.subscenes[this.character_name].update_data()
+                }
+            }
+
+            do_attack(direction){
+                if (direction == 'right'){
+                    this.setFlipX(true)
+                }
+                this.play('attack', true)
+            }
+
+            physics_move(direction){
+                this.walking = true
+                this.play('walk_' + direction, true)
+                if (direction == 'left'){
+                    this.setVelocityX(-50)
+                }
+                else if (direction == 'right'){
+                    this.setVelocityX(50)
+                }
+                setTimeout(() => { this.setVelocity(0, 0)
+                                   this.walking = false 
+                                 }, 500)
+            }
+
+            // move(direction, steps=16, play_anim=true){
+
+            //     if (play_anim == true){
+            //         this.busy = true
+            //         this.play('walk_' + direction)
+            //     }
+
+            //     if (direction == 'left'){
+            //         this.x -= 1
+            //     }
+            //     else if (direction == 'right'){
+            //         this.x += 1
+            //     }
+                
+            //     if (steps != 0){
+            //         this.text_over_head.setPosition(this.x, this.y - 16)
+            //         setTimeout(() => {this.move(direction, steps - 1, false)}, 15)
+            //     }
+            //     else{
+            //         this.busy = false
+            //         this.play('idle_down')
+            //         this.setFlipX(false)
+            //     }
+            // }
+            
+            physics_jump(direction){
+                this.setVelocityY(-100)
+                this.play('jump')
+                if (direction == 'left'){
+                    this.setVelocityX(-50)
+                }
+                else if (direction == 'right'){
+                    this.setVelocityX(50)
+                    this.setFlipX(true)
+                }
+            }
+
+            // jump(bottom, height, falling, direction, play_anim=true){
+
+            //     if (play_anim == true){
+            //         this.busy = true
+            //         if (direction == 'right'){
+            //             this.setFlipX(true)
+            //         }
+            //         this.play('jump')
+            //     }
+
+            //     if (direction == 'left'){
+            //         this.x -= 1
+            //     }
+            //     else if (direction == 'right'){
+            //         this.x += 1
+            //     }
+                
+            //     if (falling == false){
+            //         this.y -= 1 + ((this.y - height) * .005) 
+            //         if (this.y <= bottom - height){
+            //             falling = true
+            //         }
+            //         this.text_over_head.setPosition(this.x, this.y - 16)
+            //         setTimeout(() => {this.jump(bottom, height, falling, direction, false)}, 10)
+            //     }
+            //     else{
+            //         this.y += 1
+            //         this.text_over_head.setPosition(this.x, this.y - 16)
+            //         if (this.y <= bottom){
+            //             setTimeout(() => {this.jump(bottom, height, falling, direction, false)}, 10)
+            //         }
+            //         else{
+            //             this.busy = false
+            //             this.y = bottom
+            //             this.play('idle_down')
+            //             this.setFlipX(false)
+            //         }
+            //     }
+            // }
+
+            getPosMessage(){
+                let message = {
+                    action: 'position_update',
+                    player_name: this.owner,
+                    character_name: this.character_name,
+                    position: {
+                        x: this.x,
+                        y: this.y
+                    },
+                    state: this.state,
+                    direction: this.direction
+                }
+                return message
+            }
+
+            createAnims(){
+                let frame_rate = 6
+                let walk_down = []
+                let walk_up = []
+                let walk_left = []
+                let walk_right = []
+                let jump = []
+
+                for (let i = 0; i < 4; i++){
+                    walk_down.push({key: this.texture, frame: 'character_walk_' + i + '_0'})
+                    walk_up.push({key: this.texture, frame: 'character_walk_' + i + '_1'})
+                    walk_left.push({key: this.texture, frame: 'character_walk_' + i + '_2'})
+                    walk_right.push({key: this.texture, frame: 'character_walk_' + i + '_3'})
+                    jump.push({key: this.texture, frame: 'character_jump_' + i})
+                }
+
+                let attack = []
+                for (let i = 0; i < 3; i++){
+                    attack.push({key: this.texture, frame: 'character_attack_2'})
+                    attack.push(walk_left[0])
+                }
+
+                //walk
+                this.anims.create({
+                    key: 'walk_down',
+                    frames: walk_down,
+                    frameRate: frame_rate,
+                    repeat: -1
+                })
+                this.anims.create({
+                    key: 'walk_up',
+                    frames: walk_up,
+                    frameRate: frame_rate,
+                    repeat: -1
+                })
+                this.anims.create({
+                    key: 'walk_left',
+                    frames: walk_left,
+                    frameRate: frame_rate,
+                    repeat: -1
+                })
+                this.anims.create({
+                    key: 'walk_right',
+                    frames: walk_right,
+                    frameRate: frame_rate,
+                    repeat: -1
+                })
+
+                //jump
+                this.anims.create({
+                    key: 'jump',
+                    frames: [jump[2]],
+                    frame_rate: frame_rate
+                })
+
+                //attack
+                this.anims.create({
+                    key: 'attack',
+                    frames: attack,
+                    frameRate: 6,
+                    repeat: 0
+                })
+
+                //idle
+                this.anims.create({
+                    key: 'idle_down',
+                    frames: [walk_down[0]],
+                    frameRate: frame_rate,
+                    repeat: 1
+                })
+                this.anims.create({
+                    key: 'idle_up',
+                    frames: [walk_up[0]],
+                    frameRate: frame_rate
+                })
+                this.anims.create({
+                    key: 'idle_left',
+                    frames: [walk_left[0]],
+                    frameRate: frame_rate
+                })
+                this.anims.create({
+                    key: 'idle_right',
+                    frames: [walk_right[0]],
+                    frameRate: frame_rate
+                })
+            }
+
+            getPos(){
+                let center = this.getCenter()
+                return center
+            }
+
+            setPos(x, y){
+                this.x = x
+                this.y = y
+                this.updateTextPos()
+            }
+
+            getTexture(){
+                let r = this.texture + 'Sheet'
+                return r
+            }
+
+            getStats(){
+                let stats = {}
+                stats = {
+                    level: this.level,
+                    strength: this.strength,
+                    agility: this.agility,
+                    attack: this.attack,
+                    defense: this.defense,
+                    vitality: this.vitality,
+                    charisma: this.charisma,
+                    stamina: this.stamina,
+                    magick: this.magick
+                }
+                return stats
+            }
+
+            remove(){
+                this.text_over_head.destroy()
+                this.destroy()
+            }
+        }
+
+        class CharacterInfo extends Phaser.Scene{
+            constructor(scene_name, character){
+                super(scene_name)
+                this.character = character
+            }
+
+            create(){
+                let w = 128
+                let h = 144
+                let padding = 5
+                let style = {fontSize: '10px'}
+
+                let graphics = this.add.graphics()
+                graphics.fillStyle(0x4a2400, 1)
+                graphics.fillRoundedRect(padding, padding, w, h, 8)
+                
+                if (this.character.owner != '{{ request.user.username }}'){
+                    this.fight_btn = new TextButton(this, padding * 2, h - padding * 2, 'fight', style, () => this.fight())
+                    this.fight_btn.setOrigin(0)
+                }
+                
+                this.add.text(padding * 2, padding, 'name: ' + this.character.character_name, style)
+                this.add.text(padding * 2, padding * 3, 'owner: ' + this.character.owner, style)
+                
+                let stats = this.character.getStats()
+                let n = 4
+                for (let i in stats){
+                    n += 1
+                    let text = i + ': ' + stats[i]
+                    this.add.text(padding * 2, padding * n * 1.75, text, style)
+                }
+                this.in_fight = this.add.text(padding * 2, padding * (n + 1) * 1.75, 'in fight: ' + this.character.in_fight, style)
+                this.exit_btn = new TextButton(this, w - padding, padding * 2, 'x', style, () => this.hide())
+                this.update_data()
+            }
+            
+            update_data(){
+                // temp
+                //do update
+                if (this.character.in_fight == true && this.fight_btn){
+                    this.fight_btn.disable()
+                }
+                this.in_fight.text = 'in fight: ' + this.character.in_fight
+            }
+
+            hide(){
+                this.character.scene.scene.sleep(this.character.info_scene_name)
+                // setTimeout(() => {this.character.scene.scene.sleep(this.character.info_scene_name)}, 500)
+            }
+
+            fight(){
+
+                let message = {
+                    action: 'fight_request',
+                    from: {
+                        player: this.character.scene.player.owner,
+                        character: this.character.scene.player.character_name
+                    },
+                    to: {
+                        player: this.character.owner,
+                        character: this.character.character_name
+                    }
+                }
+
+                ws.send(JSON.stringify(message))
+            }
+        }
+
+        class Notification extends Phaser.Scene{
+            constructor(name, scene, data, w, h){
+                super(name)
+                this.parent_scene = scene
+
+                this.text = data
+                this.w = w
+                this.h = h
+            }
+
+            create(){
+                let padding = 8
+                let ww = 128
+                let wh = 96
+                let style = {fontSize: '10px'}
+
+                let graphics = this.add.graphics()
+                graphics.fillStyle(0x4a2400, 1)
+                graphics.fillRoundedRect(this.w - ww - padding, padding, ww, wh, 8)
+
+                let center_x = this.w - ww * .5 - padding
+                let center_y = wh * .5 + padding
+                
+                let line = 4
+                this.add.text(center_x, padding * 3, this.text.from.character, style).setOrigin(.5)
+                
+                let quotes = this.text.text
+                quotes.forEach((element, index, array) => {
+                    this.add.text(center_x, padding * line * 1.25, element, style).setOrigin(.5)
+                    line += 1
+                })
+
+                this.true_btn = new TextButton(this, center_x - ww * .25, center_y + wh * .25, this.text.buttons.true, style, () => this.accept())
+                this.true_btn = new TextButton(this, center_x + ww * .25, center_y + wh * .25, this.text.buttons.false, style, () => this.decline())
+            }
+
+            accept(){
+                this.scene.remove(this.key)
+                this.parent_scene.player.in_fight = true
+
+                let message = {
+                    
+                    action: 'fight_start',
+                    text: {
+                        player_0: this.text.from,
+                        player_1: {
+                            player: this.parent_scene.player.owner,
+                            character: this.parent_scene.player.character_name
+                        }
+                    }
+                }
+
+                ws.send(JSON.stringify(message))
+            }
+
+            decline(){
+                this.scene.remove(this.key)
+            }
+        }
+
+        class GUI extends Phaser.Scene{
+            constructor(name, parent_scene, w, h){
+                super(name)
+                this.parent_scene = parent_scene
+                this.w = w
+                this.h = h
+            }
+
+            preload(){
+                this.load.image('mail', '{% static "game/assets/buttons/mail.png" %}')
+            }
+
+            create(){
+
+
+                let padding = 2
+                let size = 24
+                let graphics = this.add.graphics()
+
+                let slots_n = 5
+                let big_width = slots_n * (size + padding) + padding
+                let big_height = size + 2 * padding
+
+                // big rect
+                graphics.fillStyle(0xdeeeff, 1)
+                graphics.fillRoundedRect(this.w - big_width, padding, big_width, big_height, 4)
+
+                //small rects
+                let centers = []
+                graphics.fillStyle(0x556d89, 1)
+                for (let i = 0; i < 5; i++){
+                    graphics.fillRoundedRect(this.w - big_width + padding + i * (size + padding), 2 * padding, size, size, 2)
+                    let center = {
+                        x: this.w - big_width + padding + i * (size + padding) + size * .5,
+                        y: padding * 2 + size * .5
+                    }
+                    centers.push(center)
+                }  
+
+                this.mails = []
+                let mail_btn = new ImageButton(this, centers[centers.length - 1].x, centers[centers.length - 1].y, 'mail', () => this.test())
+            }
+
+            showMails(){
+                console.log('test')
+            }
+        }
+
+        class DuelHUD extends Phaser.Scene{
+            constructor(name, parent_scene, w, h){
+                super(name)
+                this.parent_scene = parent_scene
+                this.player = parent_scene.you
+                this.w = w
+                this.h = h
+            }
+
+            create(){
+
+                let style = {backgroundColor: '#2a584f', color: '#fcffc0 ', padding: 5, fontSize: '12px'}
+                let bar_style = {color: '#fcffc0 ', fontSize: '12px'}
+
+                let graphics = this.add.graphics()
+                graphics.fillStyle(0x2f142f, 1)
+                graphics.fillRoundedRect(this.w * .2, this.h * .65, this.w * .6, this.h * .3, 8)
+                graphics.fillRoundedRect(this.w * .2, this.h * .02, this.w * .6, this.h * .08, 8)
+
+                let box = this.add.image(this.w * .5, this.h * .8, 'face_box')
+                let avatar = this.add.image(this.w * .5, this.h * .8, this.player.face)
+
+                let jump_left_btn = new TextButton(this, this.w * .3, this.h * .7, 'jump left', style, () => this.jump('left'))
+                let jump_right_btn = new TextButton(this, this.w * .7, this.h * .7, 'jump right', style, () => this.jump('right'))
+                let attack_left_btn = new TextButton(this, this.w * .3, this.h * .8, 'attack left', style, () => this.attack('left'))
+                let attack_right_btn = new TextButton(this, this.w * .7, this.h * .8, 'attack right', style, () => this.attack('right'))
+                let left_btn = new TextButton(this, this.w * .3, this.h * .9, 'move left', style, () => this.move('left'))
+                let right_btn = new TextButton(this, this.w * .7, this.h * .9, 'move right', style, () => this.move('right'))
+
+                this.health = 100
+                let health = this.add.text(this.w * .5, this.h * .9, 'health: ' + this.health).setOrigin(.5)
+
+                if (this.player.can_move == true){
+                    this.whos_move = this.add.text(this.w * .3, this.h * .06, 'your move').setOrigin(.5)
+                }
+                else{
+                    this.whos_move = this.add.text(this.w * .3, this.h * .06, 'enemy move').setOrigin(.5)
+                }
+
+                this.start_time = 15
+                this.time_left = 15
+                this.add.text(this.w * .5, this.h * .06, 'time left:').setOrigin(.5)
+                this.time_display = this.add.text(this.w * .7, this.h * .06, this.time_left).setOrigin(.5)
+
+                this.ff_btn = new TextButton(this, this.w * .85, this.h * .06, 'FORFEIT', style, () => this.forfeit())
+
+                this.timeout = setTimeout(() => {  this.countdown() }, 1000)
+            }
+
+            resetHud(){
+
+            }
+
+            countdown(){
+                if (this.scene.get('arena')){
+                    this.time_left -= 1
+                    this.time_display.text = this.time_left
+                    if (this.time_left != 0){
+                        this.timeout = setTimeout(() => {  this.countdown() }, 1000)
+                    }   
+                    else if (this.time_left == 0){
+                        if(this.player.can_move == true){
+                            this.sendMessage('dance', 'all')
+                        }
+                    }
+                }
+            }
+            
+            forfeit(){
+                this.parent_scene.exit()
+            }
+
+            attack(direction){
+                
+                if (this.player.can_move == true){
+                    this.sendMessage('attack', direction)
+                    this.player.do_attack(direction)
+                }
+            }
+
+            move(direction){
+                
+                if (this.player.can_move == true){
+                    this.sendMessage('move', direction)
+                    this.player.physics_move(direction)
+                }
+            }
+
+            jump(direction){
+                if (this.player.can_move == true){
+                    this.sendMessage('jump', direction)
+                    this.player.physics_jump(direction)
+                }
+            }
+
+            sendMessage(move, direction, damage=0){
+                let message = {
+                    action: 'fight_move',
+                    data: {
+                        group_name: this.parent_scene.group_name,
+                        player_move: {
+                            move: move,
+                            direction: direction,
+                            damage: damage
+                        }
+                    }
+                }
+                ws.send(JSON.stringify(message))
+            }
+        }
+
+        const config = {
+            type: Phaser.AUTO,
+            width: 640,
+            height: 480,
+            backgroundColor: '#141b1b',
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_HORIZONTALLY
+            },
+            mode: Phaser.Scale.FIT,
+            autoRound: false,
+            // pixelArt: true,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: { y: 0 },
+                    debug: false
+                }
+            },
+
+            scene: [LoadingScene, MainMenu, Credits, CreateCharacterMenu, ChooseCharacterMenu],
+            render: {
+                pixelArt: true
+            }
+        }
+
+        const game = new Phaser.Game(config)
+        ws.addEventListener('open', () =>{
+            console.log('connected')
+        })
+
+        ws.addEventListener('close', () =>{
+            console.log('disconnected from server')
+        })
+
+        function getRandomPos(scene) {
+            let w = scene.sys.game.canvas.width
+            let h = scene.sys.game.canvas.height
+
+            let pos_x = getRandomInt(w * .25, w * .75)
+            let pos_y = getRandomInt(h * .25, h * .75)
+            
+            return [pos_x, pos_y]
+        }
+
+        function getRandomInt(min, max){
+            min = Math.ceil(min)
+            max = Math.floor(max)
+            return Math.floor(Math.random() * (max - min)) + min
+        }
+
+        function getDistance(x_0, y_0, x_1, y_1){
+            let x_dist = Math.abs(x_0 - x_1)
+            let y_dist = Math.abs(y_0 - y_1)
+            return Math.sqrt(x_dist ** 2 + y_dist ** 2)
+        }
+
+        window.scrollTo(0, document.body.scrollHeight)
+
+    </script>
+{% endblock content %}

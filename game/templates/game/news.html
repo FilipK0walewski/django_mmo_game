@@ -1,0 +1,25 @@
+{% extends "game/base.html" %}
+{% block content %}
+    <h1 class="py-3">News:</h1>
+    {% for post in posts %}
+
+        <div class="d-flex flex-column bd-highlight mb-3 bg-dark rounded">
+            <div class="d-flex flex-row bd-highlight mb-2 p-2">
+                <img src="{{ post.author.profile.image.url }}" class="align-self-center rounded-circle article-img">
+                {% if post.author.is_superuser %}
+                    <h2 class="align-self-center text-danger text-uppercase">{{ post.author }}</h2>
+                {% else %}
+                    <h2 class="align-self-center">{{ post.author }}</h2>
+                {% endif %}
+
+                <small class="text-muted ms-auto">{{ post.date_posted }}</small>
+            </div>
+            <div class="d-flex flex-row bd-highlight mb-2 p-2">
+                <p class="text-start lh-lg px-2">{{ post.content }}</p>
+            </div>
+        </div>
+    {% endfor %}
+
+
+
+{% endblock content %}
