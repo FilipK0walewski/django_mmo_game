@@ -76,6 +76,7 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 
 # channels
 ASGI_APPLICATION = 'game.routing.application'
+
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
@@ -84,7 +85,6 @@ CHANNEL_LAYERS = {
         }
     }
 }
-
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
