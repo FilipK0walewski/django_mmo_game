@@ -3,3 +3,4 @@ channels-redis==3.3.0
 Django==3.2.1
 django-crispy-forms==1.11.2
 Pillow==8.2.0
+whitenoise
