@@ -6,7 +6,7 @@
         console.log('websocket: ' + window.location.host)
         const ws = new WebSocket(
             'ws://' +
-            window.location.host +
+            '0.0.0.0:5000' +
             '/ws/test_game/'
             )
 
@@ -131,8 +131,6 @@
 
                 '{% for skin in skins %}'
                     '{% with skin.name as image_path %}'
-                        console.log('before slugify: {{ skin.name }}')
-                        console.log('after slugify: {{ image_path }}')
                         '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/Faceset.png" as image_path %}'    
                             this.load.image('{{ skin.name }}', '{% static image_path %}')
                             this.skins.push('{{ skin.name }}')
