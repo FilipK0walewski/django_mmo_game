@@ -3,7 +3,12 @@
 {% block content %}
     <input type="text" id="character_name" placeholder="Character name..." style="display: none;">
     <script>
-        const ws = new WebSocket('ws://' + window.location.host + '/ws/test_game/')
+        console.log('websocket: ' + window.location.host)
+        const ws = new WebSocket(
+            'ws://' +
+            window.location.host +
+            '/ws/test_game/'
+            )
 
         class TextButton extends Phaser.GameObjects.Text{
             constructor(scene, x, y, text, style, on_click, background=false){
