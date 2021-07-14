@@ -127,6 +127,7 @@
                 '{% for skin in skins %}'
                     '{% with skin.name|slugify as image_path %}'
                         '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/Faceset.png" as image_path %}'
+                            console.log('{{ image_path }}')
                             this.load.image('{{ skin.name }}', '{% static image_path %}')
                             this.skins.push('{{ skin.name }}')
                         '{% endwith %}'
@@ -474,7 +475,7 @@
                     this.enemy.setFlipX(false)
                 }
                 this.you.updateTextPos()
-                this.enemy.updateTextPos()
+                this.enemy.updateTextPos( )
             }
 
             exit(){
