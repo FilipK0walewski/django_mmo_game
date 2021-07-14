@@ -125,7 +125,7 @@
                 })
 
                 '{% for skin in skins %}'
-                    '{% with skin.name|slugify as image_path %}'
+                    '{% with skin.name as image_path %}'
                         console.log('before slugify: {{ skin.name }}')
                         console.log('after slugify: {{ image_path }}')
                         '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/Faceset.png" as image_path %}'    
