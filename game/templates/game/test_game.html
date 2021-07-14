@@ -4,10 +4,10 @@
     <input type="text" id="character_name" placeholder="Character name..." style="display: none;">
     <script>
         let HOST = location.origin.replace(/^http/, 'ws')
-        console.log('ws test: ' +  HOST)
+        console.log('wss test: ' +  HOST)
 
         const ws = new WebSocket(
-            'ws://' +
+            'wss://' +
             window.location.host +
             '/ws/test_game/'
             )
