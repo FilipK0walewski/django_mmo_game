@@ -3,7 +3,9 @@
 {% block content %}
     <input type="text" id="character_name" placeholder="Character name..." style="display: none;">
     <script>
-        console.log('websocket: ' + window.location.host)
+        let HOST = location.origin.replace(/^http/, 'ws')
+        console.log('ws test: ' +  HOST)
+
         const ws = new WebSocket(
             'ws://' +
             window.location.host +
