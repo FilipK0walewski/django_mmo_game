@@ -6,7 +6,7 @@
         console.log('websocket: ' + window.location.host)
         const ws = new WebSocket(
             'ws://' +
-            '0.0.0.0:5000' +
+            window.location.host +
             '/ws/test_game/'
             )
 
