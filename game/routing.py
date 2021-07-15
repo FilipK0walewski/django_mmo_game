@@ -10,7 +10,7 @@ websocket_urlpatterns = [
     re_path(r'ws/chat/(?P<room_name>\w+)/$', Player.as_asgi()),
     re_path(r'ws/test_game/$', consumers.GameConsumer.as_asgi())
 ]
-
+channel_routing = {}
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),
