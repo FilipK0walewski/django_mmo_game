@@ -6,14 +6,14 @@
         // let HOST = location.origin.replace(/^http/, 'ws')
         // console.log('wss test: ' +  HOST)
 
-        let ws_scheme = window.location.protocol == "https:" ? "wss" : "ws"
-        let ws = new ReconnectingWebSocket(ws_scheme + '://' + window.location.host + "/game/test_game/")
+        // let ws_scheme = window.location.protocol == "https:" ? "wss" : "ws"
+        // let ws = new ReconnectingWebSocket(ws_scheme + '://' + window.location.host + "/game/test_game/")
 
-        // const ws = new WebSocket(
-        //     'ws://' +
-        //     window.location.host +
-        //     '/ws/test_game/'
-        //     )
+        const ws = new WebSocket(
+            'ws://' +
+            window.location.host +
+            '/ws/test_game/'
+            )
 
         class TextButton extends Phaser.GameObjects.Text{
             constructor(scene, x, y, text, style, on_click, background=false){
