@@ -11,7 +11,7 @@ websocket_urlpatterns = [
     re_path(r'ws/test_game/$', consumers.GameConsumer.as_asgi())
 ]
 
-channel_routing = {}
+# channel_routing = {}
 
 application = ProtocolTypeRouter({
     "http": get_asgi_application(),

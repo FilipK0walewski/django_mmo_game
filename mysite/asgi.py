@@ -10,11 +10,11 @@ https://docs.djangoproject.com/en/3.2/howto/deployment/asgi/
 import os
 
 import django
-# from channels.routing import get_default_application
-from channels.auth import AuthMiddlewareStack
-from channels.routing import ProtocolTypeRouter, URLRouter, get_default_application
-from django.core.asgi import get_asgi_application
-import game.routing
+from channels.routing import get_default_application
+# from channels.auth import AuthMiddlewareStack
+# from channels.routing import ProtocolTypeRouter, URLRouter, get_default_application
+# from django.core.asgi import get_asgi_application
+# import game.routing
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mysite.settings')
 django.setup()
