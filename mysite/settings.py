@@ -34,7 +34,7 @@ WSGI_APPLICATION = f'{config("PROJECT_NAME")}.wsgi.application'
 
 ASGI_APPLICATION = f'{config("PROJECT_NAME")}.routing.application'
 
-SECRET_KEY = 'django-insecure-is64h0n7u_bgu4&z)acy&5!mx$#8pk!uqn_m8q-7uww-u%=!y7'
+SECRET_KEY = f'{config("SECRET_KEY")}'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 
@@ -141,6 +141,7 @@ USE_L10N = True
 
 USE_TZ = True
 
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 DATABASES = {
     'default': {
@@ -188,7 +189,7 @@ BASE_URL = "http://159.89.3.72"
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # STATIC_URL = '/static/'
 # STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 
@@ -198,10 +199,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # Default primary key field type
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-MEDIA_URL = '/media/'
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# MEDIA_URL = '/media/'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
