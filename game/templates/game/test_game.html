@@ -136,7 +136,8 @@
 
                 '{% for skin in skins %}'
                     '{% with skin.name as image_path %}'
-                        '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/Faceset.png" as image_path %}'    
+                        '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/Faceset.png" as image_path %}'
+                            console.log('{% static image_path %}')
                             this.load.image('{{ skin.name }}', '{% static image_path %}')
                             this.skins.push('{{ skin.name }}')
                         '{% endwith %}'
