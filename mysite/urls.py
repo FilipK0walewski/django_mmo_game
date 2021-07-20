@@ -22,7 +22,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('dont-type-that/', admin.site.urls),
     path('game/', include('game.urls')),
     path('', auth_views.LoginView.as_view(template_name='users/login.html'), name='login'),
     path('logout/', user_views.logout_view, name='logout'),

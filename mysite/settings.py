@@ -15,7 +15,7 @@ import os
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-import whitenoise.middleware
+# import whitenoise.middleware
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -24,19 +24,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 
-DEBUG = config('DEBUG', default=False, cast=bool)
+# DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = True
 
-ALLOWED_HOSTS = ['159.89.3.72']
+ALLOWED_HOSTS = ['*']
+CORS_ORIGIN_ALLOW_ALL = True
 
+# CHANGE HERE FUCKER!
 ROOT_URLCONF = f'{config("PROJECT_NAME")}.urls'
 
 WSGI_APPLICATION = f'{config("PROJECT_NAME")}.wsgi.application'
 
-ASGI_APPLICATION = f'{config("PROJECT_NAME")}.routing.application'
+ASGI_APPLICATION = f'{config("ASGI_APP")}.routing.application'
 
-SECRET_KEY = f'{config("SECRET_KEY")}'
-
-# SECURITY WARNING: don't run with debug turned on in production!
+SECRET_KEY = 'django-insecure-is64h0n7u_bgu4&z)acy&5!mx$#8pk!uqn_m8q-7uww-u%=!y7'
 
 # Application definition
 
@@ -51,6 +52,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'channels',
+    'storages',
+    'corsheadres',
 ]
 
 MIDDLEWARE = [
@@ -61,7 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 # ROOT_URLCONF = 'mysite.urls'
@@ -98,17 +101,6 @@ CHANNEL_LAYERS = {
     }
 }
 
-# Database
-# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
@@ -127,7 +119,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/
 
@@ -143,6 +134,9 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Database
+# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
@@ -153,6 +147,8 @@ DATABASES = {
         'PORT': '',
     }
 }
+
+# AUTH_USER_MODEL = 'account.Account'
 
 AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
@@ -183,7 +179,7 @@ EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'CodingWithMitch Team <noreply@codingwithmitch.com>'
 
 
-BASE_URL = "http://159.89.3.72"
+BASE_URL = "http://filipkowalewski.com"
 
 
 # Static files (CSS, JavaScript, Images)
@@ -203,6 +199,5 @@ BASE_URL = "http://159.89.3.72"
 # MEDIA_URL = '/media/'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
-
 LOGIN_REDIRECT_URL = 'game-news'
 LOGIN_URL = 'login'

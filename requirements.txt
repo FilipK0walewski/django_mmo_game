@@ -2,7 +2,7 @@ boto3
 channels==3.0.3
 channels-redis==3.3.0
 gunicorn
-gunicorn psycopg2-binary
+psycopg2-binary
 Django==3.2.1
 django-crispy-forms==1.11.2
 Pillow==8.2.0
