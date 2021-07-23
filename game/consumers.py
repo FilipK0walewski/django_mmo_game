@@ -292,6 +292,7 @@ class GameConsumer(AsyncWebsocketConsumer):
                     }
                 }
             )
+        # FIGHT END
         elif action == 'fight_end':
             # group = data['data']['group_name']
             # print('test: ' + str(data))
@@ -324,12 +325,13 @@ class GameConsumer(AsyncWebsocketConsumer):
                     }
                 }
             )
+        # ADD CHARACTER
         elif action == 'add_character':
             print('\n')
             user = self.get_user_by_name()
             exists = await database_sync_to_async(self.add_character)(data)
             message = {
-                'type': 'message',
+                'type': 'data.message',
                 'message': {
                     'action': 'add_character',
                     'data': {

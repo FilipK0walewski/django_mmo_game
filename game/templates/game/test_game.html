@@ -3,17 +3,16 @@
 {% block content %}
     <input type="text" id="character_name" placeholder="Character name..." style="display: none;">
     <script>
-        // let HOST = location.origin.replace(/^http/, 'ws')
-        // console.log('wss test: ' +  HOST)
 
-        // let ws_scheme = window.location.protocol == "https:" ? "wss" : "ws"
-        // let ws = new ReconnectingWebSocket(ws_scheme + '://' + window.location.host + "/game/test_game/")
-
-        const ws = new WebSocket(
-            'ws://' +
-            window.location.host + ':8001/' +
-            'ws/test_game/'
-            )
+        let path = ''
+        if (window.location.host == '127.0.0.1:8000'){
+            path = 'ws://127.0.0.1:8000/ws/test_game/'
+        }
+        else{
+            path = 'ws://' + window.location.host + ':8001/ws/test_game/'
+        }
+        console.log(window.location.host)
+        const ws = new WebSocket(path)
 
         class TextButton extends Phaser.GameObjects.Text{
             constructor(scene, x, y, text, style, on_click, background=false){
@@ -139,7 +138,7 @@
                 '{% for skin in skins %}'
                     '{% with skin.name as image_path %}'
                         '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/Faceset.png" as image_path %}'
-                            console.log('{% static image_path %}')
+                            // console.log('{% static image_path %}')
                             this.load.image('{{ skin.name }}', '{% static image_path %}'.replace(/&amp;/g, "&"))
                             this.skins.push('{{ skin.name }}')
                         '{% endwith %}'
