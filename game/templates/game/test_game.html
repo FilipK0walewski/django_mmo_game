@@ -3,17 +3,16 @@
 {% block content %}
     <input type="text" id="character_name" placeholder="Character name..." style="display: none;">
     <script>
-        // let HOST = location.origin.replace(/^http/, 'ws')
-        // console.log('wss test: ' +  HOST)
 
-        // let ws_scheme = window.location.protocol == "https:" ? "wss" : "ws"
-        // let ws = new ReconnectingWebSocket(ws_scheme + '://' + window.location.host + "/game/test_game/")
-
-        const ws = new WebSocket(
-            'ws://' +
-            window.location.host +
-            '/ws/test_game/'
-            )
+        let path = ''
+        if (window.location.host == '127.0.0.1:8000'){
+            path = 'ws://127.0.0.1:8000/ws/test_game/'
+        }
+        else{
+            path = 'ws://' + window.location.host + ':8001/ws/test_game/'
+        }
+        console.log(window.location.host)
+        const ws = new WebSocket(path)
 
         class TextButton extends Phaser.GameObjects.Text{
             constructor(scene, x, y, text, style, on_click, background=false){
@@ -134,15 +133,18 @@
                     this.complete = true
                 })
 
+
+
                 '{% for skin in skins %}'
                     '{% with skin.name as image_path %}'
-                        '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/Faceset.png" as image_path %}'    
-                            this.load.image('{{ skin.name }}', '{% static image_path %}')
+                        '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/Faceset.png" as image_path %}'
+                            // console.log('{% static image_path %}')
+                            this.load.image('{{ skin.name }}', '{% static image_path %}'.replace(/&amp;/g, "&"))
                             this.skins.push('{{ skin.name }}')
                         '{% endwith %}'
                         '{% with "game/assets/Actor/Characters/"|add:image_path|add:"/SpriteSheet.png" as image_path %}'
                             name = '{{ skin.name }}' + 'Sheet'
-                            this.load.atlas(name, '{% static image_path %}', '{% static "game/assets/character_frames.json" %}')
+                            this.load.atlas(name, '{% static image_path %}'.replace(/&amp;/g, "&"), '{% static "game/assets/character_frames.json" %}'.replace(/&amp;/g, "&"))
                         '{% endwith %}'
                     '{% endwith %}'
                 '{% endfor %}'
@@ -242,10 +244,10 @@
             }
 
             preload(){
-                this.load.image('arrow', '{% static "game/assets/buttons/arrow_r.png" %}')
-                this.load.image('face_box', '{% static "game/assets/Actor/FacesetBox.png" %}')
-                this.load.image('plus', '{% static "game/assets/buttons/plus.png" %}')
-                this.load.image('minus', '{% static "game/assets/buttons/minus.png" %}')
+                this.load.image('arrow', '{% static "game/assets/buttons/arrow_r.png" %}'.replace(/&amp;/g, "&"))
+                this.load.image('face_box', '{% static "game/assets/Actor/FacesetBox.png" %}'.replace(/&amp;/g, "&"))
+                this.load.image('plus', '{% static "game/assets/buttons/plus.png" %}'.replace(/&amp;/g, "&"))
+                this.load.image('minus', '{% static "game/assets/buttons/minus.png" %}'.replace(/&amp;/g, "&"))
                 let name = ''
             }
 
@@ -428,7 +430,7 @@
 
             preload(){
                 //map
-                this.load.tilemapTiledJSON('dungeon_arena', '{% static "game/assets/dungeon_arena.json" %}')
+                this.load.tilemapTiledJSON('dungeon_arena', '{% static "game/assets/dungeon_arena.json" %}'.replace(/&amp;/g, "&"))
             }
 
             create(data){
@@ -572,9 +574,9 @@
 
             preload(){
                 //map
-                this.load.tilemapTiledJSON('dungeon_0', "{% static 'game/assets/dungeon_0.json' %}")
-                this.load.image('dungeon_floor_tileset', "{% static 'game/assets/dungeon_floor.png' %}")
-                this.load.image('dungeon_simple_tileset', "{% static 'game/assets/dungeon_simple.png' %}")
+                this.load.tilemapTiledJSON('dungeon_0', "{% static 'game/assets/dungeon_0.json' %}".replace(/&amp;/g, "&"))
+                this.load.image('dungeon_floor_tileset', "{% static 'game/assets/dungeon_floor.png' %}".replace(/&amp;/g, "&"))
+                this.load.image('dungeon_simple_tileset', "{% static 'game/assets/dungeon_simple.png' %}".replace(/&amp;/g, "&"))
             }
 
             create(data){
@@ -1516,7 +1518,7 @@
             }
 
             preload(){
-                this.load.image('mail', '{% static "game/assets/buttons/mail.png" %}')
+                this.load.image('mail', '{% static "game/assets/buttons/mail.png" %}'.replace(/&amp;/g, "&"))
             }
 
             create(){

@@ -1,0 +1,5 @@
+*.sqlite3
+./game/migrations/*
+./users/migrations*
+./game/__pychache__/*
+./users/__pychache__/*

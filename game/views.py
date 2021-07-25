@@ -1,6 +1,6 @@
 import json
-
-from django.shortcuts import render, get_object_or_404
+from django.contrib import messages
+from django.shortcuts import render, redirect
 from django.views.generic import ListView, CreateView
 from django.contrib.auth.models import User
 from .models import Post, Character
@@ -9,49 +9,65 @@ from django.conf import settings
 import os
 
 
-def news(request):
-    return render(request, 'game/news.html')
-
-
-def chat(request):
-    return render(request, 'game/chat.html')
-
-
-def room_view(request, room_name):
-    context = {'room_name': room_name}
-    return render(request, 'game/room.html', context)
-
-
-def game_view(request):
-    return render(request, 'game/game.html')
-
-
 def test_game(request):
-    user = request.user
-    f = os.path.join(settings.BASE_DIR, 'game/static/game/assets/characters.json')
+    if request.user.is_authenticated:
+        user = request.user
+        f = os.path.join(settings.BASE_DIR, 'game/static/game/assets/characters.json')
 
-    with open(f) as json_file:
-        data = json.load(json_file)
+        with open(f) as json_file:
+            data = json.load(json_file)
 
-    context = {
-        'user': user.username,
-        'id': user.pk,
-        'characters': Character.objects.filter(owner=user.pk),
-        'skins': data['characters']
-    }
-    return render(request, 'game/test_game.html', context)
+        context = {
+            'user': user.username,
+            'id': user.pk,
+            'characters': Character.objects.filter(owner=user.pk),
+            'skins': data['characters']
+        }
+        return render(request, 'game/test_game.html', context)
+    else:
+        return redirect(settings.LOGIN_URL)
 
 
 def user_view(request, username):
-    u = User.objects.filter(username=username).first()
-    u_id = u.pk
-    context = {
-        'user': u,
-        'id': u_id,
-        'posts': Post.objects.filter(author=u_id),
-        'characters': Character.objects.filter(owner=u_id)
-    }
-    return render(request, 'game/user_page.html', context)
+    if request.user.is_authenticated:
+        u = User.objects.filter(username=username).first()
+        if u is not None:
+            u_id = u.pk
+            context = {
+                'user': u,
+                'id': u_id,
+                'posts': Post.objects.filter(author=u_id),
+                'characters': Character.objects.filter(owner=u_id)
+            }
+            return render(request, 'game/user_page.html', context)
+        else:
+            messages.warning(request, 'searched user does not exist.')
+            return redirect('game-users-all')
+    else:
+        return redirect(settings.LOGIN_URL)
+
+
+def news_view(request):
+    if request.user.is_authenticated:
+        context = {
+            'posts': Post.objects.all(),
+        }
+        return render(request, 'game/news.html', context)
+    else:
+        return redirect(settings.LOGIN_URL)
+
+
+def all_users_view(request):
+    if request.user.is_authenticated:
+        context = {
+            'users': User.objects.all()
+        }
+        return render(request, 'game/users_all.html', context)
+    else:
+        return redirect(settings.LOGIN_URL)
+
+
+# not used :(
 
 
 class PostListView(ListView):
