@@ -32,7 +32,7 @@ WSGI_APPLICATION = f'{config("PROJECT_NAME")}.wsgi.application'
 
 ASGI_APPLICATION = f'{config("ASGI_APP")}.routing.application'
 
-SECRET_KEY = 'django-insecure-is64h0n7u_bgu4&z)acy&5!mx$#8pk!uqn_m8q-7uww-u%=!y7'
+SECRET_KEY = f'{config("SECRET_KEY")}
 
 # Application definition
 
